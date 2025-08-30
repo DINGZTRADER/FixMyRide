@@ -15,13 +15,12 @@
       </div>
       <div class="field">
         <label for="year">Year of Manufacture</label>
-        <input id="year" type="number" min="1900" max="2100" v-model.number="form.year" />
+        <input id="year" type="number" min="1900" :max="currentYear" v-model.number="form.year" @input="onYearInput" />
         <p v-if="errors.year" class="error-inline">{{ errors.year[0] }}</p>
       </div>
       <div class="field">
         <label for="problem_type">Problem</label>
         <select id="problem_type" v-model="form.problem_type" required :class="{ invalid: errors.problem_type }">
-          <option disabled value="">Select a problem</option>
           <option>Engine</option>
           <option>Electrical</option>
           <option>Brakes</option>
@@ -54,8 +53,26 @@
       <button :class="['btn', filter==='mine' ? 'primary' : 'outline']" @click="setFilter('mine')">Mine</button>
     </div>
 
+    <div class="filters">
+      <label>
+        Car Make:
+        <select v-model="selectedMake">
+          <option value="">All</option>
+          <option v-for="m in makes" :key="m" :value="m">{{ m }}</option>
+        </select>
+      </label>
+      <label>
+        Sort:
+        <select v-model="sortBy">
+          <option value="date_desc">Date (newest)</option>
+          <option value="date_asc">Date (oldest)</option>
+          <option value="make_az">Make A–Z</option>
+        </select>
+      </label>
+    </div>
+
     <ul class="requests">
-      <li v-for="request in requests" :key="request.id" class="request-item">
+      <li v-for="request in visibleRequests" :key="request.id" class="request-item">
         <div class="request-head">
           <strong>{{ request.car_make }} {{ request.car_model }}<span v-if="request.year"> ({{ request.year }})</span></strong>
           <span class="status" :data-status="request.status">{{ request.status }}</span>
@@ -96,7 +113,7 @@ export default {
         car_make: '',
         car_model: '',
         year: '',
-        problem_type: '',
+        problem_type: 'General Service',
         phone_number: '',
         willing_to_pay: false,
         issue: ''
@@ -107,12 +124,27 @@ export default {
       filter: 'all',
       page: 1,
       perPage: 10,
-      totalPages: 1
+      totalPages: 1,
+      selectedMake: '',
+      sortBy: 'date_desc'
     };
   },
   computed: {
     isOwner() { return this.role === 'owner'; },
-    isMechanic() { return this.role === 'mechanic'; }
+    isMechanic() { return this.role === 'mechanic'; },
+    currentYear() { return new Date().getFullYear(); },
+    makes() {
+      const set = new Set(this.requests.map(r => r.car_make).filter(Boolean));
+      return Array.from(set).sort((a,b)=> String(a).localeCompare(String(b)));
+    },
+    visibleRequests() {
+      let list = this.requests.slice();
+      if (this.selectedMake) list = list.filter(r => r.car_make === this.selectedMake);
+      if (this.sortBy === 'date_desc') list.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+      else if (this.sortBy === 'date_asc') list.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+      else if (this.sortBy === 'make_az') list.sort((a,b)=> String(a.car_make||'').localeCompare(String(b.car_make||'')));
+      return list;
+    }
   },
   async created() {
     this.role = (localStorage.getItem('role') || '').toLowerCase();
@@ -121,7 +153,15 @@ export default {
   methods: {
     onPhoneInput() {
       const raw = this.form.phone_number || '';
-      this.form.phone_number = raw.replace(/[^+0-9\(\)\s-]/g, '');
+      this.form.phone_number = raw.replace(/[^+0-9()\s-]/g, '');
+    },
+    onYearInput() {
+      let y = parseInt(this.form.year, 10);
+      if (Number.isFinite(y)) {
+        if (y < 1900) y = 1900;
+        if (y > this.currentYear) y = this.currentYear;
+        this.form.year = y;
+      }
     },
     async fetchRequests() {
       try {
@@ -154,7 +194,7 @@ export default {
       try {
         await axios.post('/api/requests', this.form);
         this.message = 'Request created!';
-        this.form = { car_make: '', car_model: '', year: '', problem_type: '', phone_number: '', willing_to_pay: false, issue: '' };
+        this.form = { car_make: '', car_model: '', year: '', problem_type: 'General Service', phone_number: '', willing_to_pay: false, issue: '' };
         await this.fetchRequests();
       } catch (error) {
         if (error.response && error.response.status === 422 && error.response.data.errors) {
@@ -209,6 +249,9 @@ input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--bor
 .toolbar { margin: 10px 0 16px; }
 .toolbar .btn { margin-right: 8px; }
 
+.filters { display: flex; gap: 12px; align-items: center; margin: 10px 0 16px; }
+.filters select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+
 .requests { list-style: none; padding: 0; }
 .request-item { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
 .request-head { display: flex; justify-content: space-between; align-items: center; }
@@ -223,11 +266,6 @@ input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--bor
 
 .pager { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .pager .btn { padding: 6px 10px; }
-</style>
-
 
 .invalid { border-color: #dc2626 !important; }
-
-
-
-
+</style>
