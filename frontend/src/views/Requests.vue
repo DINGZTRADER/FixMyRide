@@ -4,13 +4,45 @@
 
     <form v-if="isOwner" class="request-form" @submit.prevent="createRequest">
       <div class="field">
-        <label for="car_model">Car Model:</label>
+        <label for="car_make">Car Make</label>
+        <input id="car_make" v-model="form.car_make" required />
+        <p v-if="errors.car_make" class="error-inline">{{ errors.car_make[0] }}</p>
+      </div>
+      <div class="field">
+        <label for="car_model">Car Model</label>
         <input id="car_model" v-model="form.car_model" required />
         <p v-if="errors.car_model" class="error-inline">{{ errors.car_model[0] }}</p>
       </div>
       <div class="field">
-        <label for="issue">Issue:</label>
-        <textarea id="issue" v-model="form.issue" required></textarea>
+        <label for="year">Year of Manufacture</label>
+        <input id="year" type="number" min="1900" max="2100" v-model.number="form.year" />
+        <p v-if="errors.year" class="error-inline">{{ errors.year[0] }}</p>
+      </div>
+      <div class="field">
+        <label for="problem_type">Problem</label>
+        <select id="problem_type" v-model="form.problem_type" required>
+          <option disabled value="">Select a problem</option>
+          <option>Engine</option>
+          <option>Electrical</option>
+          <option>Brakes</option>
+          <option>Transmission</option>
+          <option>Suspension</option>
+          <option>General Service</option>
+          <option>Other</option>
+        </select>
+        <p v-if="errors.problem_type" class="error-inline">{{ errors.problem_type[0] }}</p>
+      </div>
+      <div class="field">
+        <label for="phone_number">Owner Phone</label>
+        <input id="phone_number" v-model="form.phone_number" required />
+        <p v-if="errors.phone_number" class="error-inline">{{ errors.phone_number[0] }}</p>
+      </div>
+      <div class="field">
+        <label><input type="checkbox" v-model="form.willing_to_pay" /> Willing to pay 30k call-out fee</label>
+      </div>
+      <div class="field">
+        <label for="issue">Additional Details</label>
+        <textarea id="issue" v-model="form.issue" placeholder="Optional"></textarea>
         <p v-if="errors.issue" class="error-inline">{{ errors.issue[0] }}</p>
       </div>
       <button type="submit" class="btn primary">Create Request</button>
@@ -25,11 +57,17 @@
     <ul class="requests">
       <li v-for="request in requests" :key="request.id" class="request-item">
         <div class="request-head">
-          <strong>{{ request.car_model }}</strong>
+          <strong>{{ request.car_make }} {{ request.car_model }}<span v-if="request.year"> ({{ request.year }})</span></strong>
           <span class="status" :data-status="request.status">{{ request.status }}</span>
         </div>
-        <div class="meta">Created by {{ request.owner_name || 'Unknown' }} • Assigned to {{ request.assigned_to_name || 'Unassigned' }}</div>
-        <div class="issue">{{ request.issue }}</div>
+        <div class="fields">
+          <div><span class="label">Date:</span> <span class="value">{{ new Date(request.created_at).toLocaleString() }}</span></div>
+          <div><span class="label">Problem:</span> <span class="value">{{ request.problem_type || '—' }}</span></div>
+          <div><span class="label">Owner:</span> <span class="value">{{ request.owner_name || 'Unknown' }}<span v-if="request.phone_number">, {{ request.phone_number }}</span></span></div>
+          <div><span class="label">Assigned to:</span> <span class="value">{{ request.assigned_to_name || 'Unassigned' }}</span></div>
+          <div><span class="label">Call-out fee:</span> <span class="value">{{ request.willing_to_pay ? 'Yes (30k)' : 'No' }}</span></div>
+          <div v-if="request.issue"><span class="label">Details:</span> <span class="value">{{ request.issue }}</span></div>
+        </div>
         <div v-if="isMechanic" class="actions">
           <button class="btn outline" type="button" @click="assign(request.id)">Assign to me</button>
           <button class="btn outline" type="button" @click="unassign(request.id)">Unassign</button>
@@ -55,13 +93,21 @@ export default {
     return {
       requests: [],
       form: {
+        car_make: '',
         car_model: '',
+        year: '',
+        problem_type: '',
+        phone_number: '',
+        willing_to_pay: false,
         issue: ''
       },
       errors: {},
       message: '',
       role: null,
-      filter: 'all'
+      filter: 'all',
+      page: 1,
+      perPage: 10,
+      totalPages: 1
     };
   },
   computed: {
@@ -75,15 +121,27 @@ export default {
   methods: {
     async fetchRequests() {
       try {
-        const qs = (this.isMechanic && this.filter === 'mine') ? '?filter=mine' : '';
-        const response = await axios.get('/api/requests' + qs);
-        this.requests = response.data;
+        const params = new URLSearchParams();
+        if (this.isMechanic && this.filter === 'mine') params.append('filter','mine');
+        params.append('page', String(this.page));
+        params.append('per_page', String(this.perPage));
+        const response = await axios.get('/api/requests?' + params.toString());
+        const payload = response.data;
+        if (payload && payload.data && Array.isArray(payload.data)) {
+          this.requests = payload.data;
+          this.totalPages = payload.last_page || 1;
+          this.page = payload.current_page || 1;
+        } else if (Array.isArray(payload)) {
+          this.requests = payload;
+          this.totalPages = 1;
+        }
       } catch (error) {
         console.error(error);
       }
     },
     setFilter(f) {
       this.filter = f;
+      this.page = 1;
       this.fetchRequests();
     },
     async createRequest() {
@@ -92,8 +150,7 @@ export default {
       try {
         await axios.post('/api/requests', this.form);
         this.message = 'Request created!';
-        this.form.car_model = '';
-        this.form.issue = '';
+        this.form = { car_make: '', car_model: '', year: '', problem_type: '', phone_number: '', willing_to_pay: false, issue: '' };
         await this.fetchRequests();
       } catch (error) {
         if (error.response && error.response.status === 422 && error.response.data.errors) {
@@ -116,7 +173,9 @@ export default {
     },
     async unassign(id) {
       try { await axios.post(`/api/requests/${id}/unassign`); await this.fetchRequests(); } catch(e){ console.error(e); }
-    }
+    },
+    nextPage() { if (this.page < this.totalPages) { this.page++; this.fetchRequests(); } },
+    prevPage() { if (this.page > 1) { this.page--; this.fetchRequests(); } }
   }
 };
 </script>
@@ -130,7 +189,7 @@ h2 { color: var(--blue); margin-bottom: 12px; }
 .request-form { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px; }
 .field { margin-bottom: 10px; }
 label { display: block; font-weight: 600; margin-bottom: 6px; }
-input, textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
 
 .btn { border: 1px solid var(--blue); color: var(--blue); background: transparent; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
 .btn.primary { background: var(--blue); color: #fff; }
@@ -149,11 +208,15 @@ input, textarea { width: 100%; padding: 8px; border: 1px solid var(--border); bo
 .requests { list-style: none; padding: 0; }
 .request-item { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
 .request-head { display: flex; justify-content: space-between; align-items: center; }
-.meta { color: #6b7280; font-size: 0.9rem; margin: 4px 0 8px; }
+.fields { color: #374151; font-size: 0.95rem; margin: 6px 0 8px; display: grid; grid-template-columns: 1fr; gap: 4px; }
+.fields .label { color: #6b7280; font-weight: 600; margin-right: 6px; }
+.fields .value { color: #111827; }
 .issue { white-space: pre-line; }
 .status[data-status="accepted"] { color: #16a34a; }
 .status[data-status="declined"] { color: #dc2626; }
 .status[data-status="pending"] { color: var(--yellow); }
 .actions { margin-top: 10px; }
-</style>
 
+.pager { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.pager .btn { padding: 6px 10px; }
+</style>

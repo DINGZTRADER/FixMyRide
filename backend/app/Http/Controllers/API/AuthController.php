@@ -8,22 +8,27 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
+ 
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        if ($request->has('role') && is_string($request->role)) {
+            $request->merge(['role' => strtolower($request->role)]);
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:6',
-            'role' => 'required|in:mechanic,owner',
+            'password' => 'required|string|min:6|confirmed',
+            'role' => 'required|in:mechanic,owner,user',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            // Let the Eloquent 'hashed' cast handle hashing
+            'password' => $request->password,
             'role' => $request->role,
         ]);
 
@@ -52,5 +57,10 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

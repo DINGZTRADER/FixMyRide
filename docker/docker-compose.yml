@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   backend:
@@ -17,6 +17,7 @@ services:
     ports:
       - "8080:80"
     volumes:
+      - ../frontend/dist:/usr/share/nginx/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
@@ -29,4 +30,4 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "9000:9000"
+      - "3306:3306"
