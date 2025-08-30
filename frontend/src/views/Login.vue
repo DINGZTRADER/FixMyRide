@@ -57,7 +57,14 @@ export default {
 
 <style scoped>
 :root { --blue: #2563eb; --yellow: #fbbf24; --border: #e5e7eb; --text: #1f2937; }
-.container.auth { max-width: 420px; margin: 0 auto; padding: 16px; color: var(--text); text-align: left; }
+.container.auth {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+  color: var(--text);
+  text-align: left;
+  background: url('/mechanic2.png') no-repeat right bottom / 200px auto;
+}
 h2 { color: var(--blue); margin-bottom: 12px; text-align: center; }
 .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
 .field { margin-bottom: 12px; }
