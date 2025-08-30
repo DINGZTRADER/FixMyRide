@@ -1,11 +1,92 @@
-<template>
+﻿<template>
   <div id="nav">
-    <h1>Welcome to FixMyRide</h1>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/register">Register</router-link>
+    <div class="brand">
+      <img class="logo" src="/logo.png" alt="FixMyRide logo" />
+      <h1>FixMyRide</h1>
+    </div>
+    <router-link to="/">Home</router-link>
+    <template v-if="!isAuthed">
+      |
+      <router-link to="/register">Register</router-link>
+      |
+      <router-link to="/login">Login</router-link>
+    </template>
+    <template v-else>
+      |
+      <span class="hello">Hi, {{ userName }}</span>
+      |
+      <router-link to="/requests">Requests</router-link>
+      |
+      <button class="linklike" @click="logout">Logout</button>
+    </template>
   </div>
   <router-view/>
-</template>
+  </template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  name: 'AppRoot',
+  data() {
+    return {
+      isAuthed: !!localStorage.getItem('token'),
+      userName: localStorage.getItem('name') || 'User',
+    };
+  },
+  methods: {
+    async syncAuth() {
+      const token = localStorage.getItem('token');
+      this.isAuthed = !!token;
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Refresh name if missing
+        const cached = localStorage.getItem('name');
+        if (!cached) {
+          try {
+            const me = await axios.get('/api/me');
+            if (me && me.data) {
+              if (me.data.name) {
+                localStorage.setItem('name', me.data.name);
+                this.userName = me.data.name;
+              }
+              if (me.data.role) {
+                localStorage.setItem('role', me.data.role);
+              }
+            }
+          } catch (e) {}
+        } else {
+          this.userName = cached;
+        }
+      } else {
+        delete axios.defaults.headers.common['Authorization'];
+        this.userName = 'User';
+      }
+    },
+    logout() {
+      // Attempt to revoke token on server; ignore failures
+      axios.post('/api/logout').finally(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('name');
+        localStorage.removeItem('role');
+        delete axios.defaults.headers.common['Authorization'];
+        this.isAuthed = false;
+        window.dispatchEvent(new Event('auth-changed'));
+        this.$router.push('/login');
+      });
+    }
+  },
+  mounted() {
+    window.addEventListener('auth-changed', this.syncAuth);
+    window.addEventListener('storage', this.syncAuth);
+    this.syncAuth();
+  },
+  beforeUnmount() {
+    window.removeEventListener('auth-changed', this.syncAuth);
+    window.removeEventListener('storage', this.syncAuth);
+  }
+}
+</script>
 
 <style>
 #app {
@@ -16,16 +97,22 @@
   color: #2c3e50;
 }
 
-#nav {
-  padding: 30px;
-}
+#nav { padding: 12px 16px; background: #2563eb; color: #fff; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; }
+.brand .logo { width: 36px; height: 36px; object-fit: contain; }
+#nav h1 { font-size: 20px; margin: 0; }
+#nav a { font-weight: 600; color: #fff; text-decoration: none; margin: 0 8px; }
+#nav a.router-link-exact-active { color: #fbbf24; }
 
-#nav a {
+.linklike {
+  background: none;
+  border: none;
+  color: #fff;
   font-weight: bold;
-  color: #2c3e50;
+  cursor: pointer;
+  padding: 0;
 }
 
-#nav a.router-link-exact-active {
-  color: #42b983; /* This is the light green color */
-}
+.hello { font-weight: 600; }
 </style>
+
