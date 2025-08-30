@@ -4,23 +4,21 @@
       <img class="logo" src="/logo.png" alt="FixMyRide logo" />
       <h1>FixMyRide</h1>
     </div>
-    <router-link to="/">Home</router-link>
-    <template v-if="!isAuthed">
-      |
-      <router-link to="/register">Register</router-link>
-      |
-      <router-link to="/login">Login</router-link>
-    </template>
-    <template v-else>
-      |
-      <span class="hello">Hi, {{ userName }}</span>
-      |
-      <router-link to="/requests">Requests</router-link>
-      |
-      <button class="linklike" @click="logout">Logout</button>
-    </template>
+    <button class="menu-toggle" @click="mobileOpen = !mobileOpen">Menu</button>
+    <div :class="['nav-links', mobileOpen ? 'open' : '']">
+      <router-link to="/">Home</router-link>
+      <template v-if="!isAuthed">
+        <router-link to="/register">Register</router-link>
+        <router-link to="/login">Login</router-link>
+      </template>
+      <template v-else>
+        <span class="hello">Hi, {{ userName }}</span>
+        <router-link to="/requests">Requests</router-link>
+        <button class="linklike" @click="logout">Logout</button>
+      </template>
+    </div>
   </div>
-  <router-view/>
+  <router-view />
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="brand">
@@ -28,23 +26,25 @@
         <span class="name">FixMyRide</span>
       </div>
       <nav class="links">
-        <a href="/">Home</a>
-        <a href="/requests">Requests</a>
+        <router-link to="/">Home</router-link>
+        <router-link to="/requests">Requests</router-link>
+        <router-link v-if="!isAuthed" to="/register">Register</router-link>
+        <router-link v-if="!isAuthed" to="/login">Login</router-link>
       </nav>
-      <div class="copy">© FixMyRide</div>
+      <div class="copy">© {{ new Date().getFullYear() }} FixMyRide</div>
     </div>
   </footer>
-  </template>
+</template>
 
 <script>
 import axios from 'axios';
-
 export default {
   name: 'AppRoot',
   data() {
     return {
       isAuthed: !!localStorage.getItem('token'),
       userName: localStorage.getItem('name') || 'User',
+      mobileOpen: false,
     };
   },
   methods: {
@@ -53,7 +53,6 @@ export default {
       this.isAuthed = !!token;
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        // Refresh name if missing
         const cached = localStorage.getItem('name');
         if (!cached) {
           try {
@@ -77,7 +76,6 @@ export default {
       }
     },
     logout() {
-      // Attempt to revoke token on server; ignore failures
       axios.post('/api/logout').finally(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('name');
@@ -114,8 +112,15 @@ export default {
 .brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; }
 .brand .logo { width: 36px; height: 36px; object-fit: contain; }
 #nav h1 { font-size: 20px; margin: 0; }
+.nav-links { display: flex; align-items: center; gap: 8px; }
 #nav a { font-weight: 600; color: #fff; text-decoration: none; margin: 0 8px; }
 #nav a.router-link-exact-active { color: #fbbf24; }
+.menu-toggle { display: none; margin-left: auto; background: none; border: 1px solid #fff; color: #fff; padding: 4px 8px; border-radius: 4px; }
+@media (max-width: 700px) {
+  .nav-links { display: none; width: 100%; }
+  .nav-links.open { display: flex; flex-direction: column; gap: 6px; }
+  .menu-toggle { display: block; margin-left: auto; }
+}
 
 .linklike {
   background: none;
@@ -132,15 +137,5 @@ export default {
 .site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }
 .site-footer .brand .name { font-weight: 700; }
-.site-footer .copy { opacity: 0.85; }\n\n.site-footer { background: #1e3a8a; color: #fff; margin-top: 24px; }\n.site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }\n.site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }\n.site-footer .brand .name { font-weight: 700; }\n.site-footer .copy { opacity: 0.85; }
-</style>
-
-
-
-.site-footer { background: #1e3a8a; color: #fff; margin-top: 24px; }
-.site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }
-.site-footer .brand .name { font-weight: 700; }
 .site-footer .copy { opacity: 0.85; }
-
-
+</style>
