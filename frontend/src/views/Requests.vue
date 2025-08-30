@@ -269,3 +269,4 @@ input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--bor
 
 .invalid { border-color: #dc2626 !important; }
 </style>
+

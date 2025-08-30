@@ -19,6 +19,22 @@ class RepairRequestController extends Controller
             $query->where('assigned_to', $user->id);
         }
 
+        // Optional filters
+        if ($make = $request->query('make')) {
+            $query->where('car_make', $make);
+        }
+        if ($q = $request->query('q')) {
+            $query->where(function ($w) use ($q) {
+                $like = "%{$q}%";
+                $w->where('car_make', 'like', $like)
+                  ->orWhere('car_model', 'like', $like)
+                  ->orWhere('problem_type', 'like', $like)
+                  ->orWhere('phone_number', 'like', $like)
+                  ->orWhereHas('user', function ($u) use ($like) { $u->where('name', 'like', $like)->orWhere('email', 'like', $like); })
+                  ->orWhereHas('mechanic', function ($m) use ($like) { $m->where('name', 'like', $like)->orWhere('email', 'like', $like); });
+            });
+        }
+
         $perPage = (int) $request->query('per_page', 10);
         $paginated = $query->paginate($perPage);
 
