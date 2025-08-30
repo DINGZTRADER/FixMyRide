@@ -114,7 +114,7 @@ export default {
 #nav h1 { font-size: 20px; margin: 0; }
 .nav-links { display: flex; align-items: center; gap: 8px; }
 #nav a { font-weight: 600; color: #fff; text-decoration: none; margin: 0 8px; }
-#nav a.router-link-exact-active { color: #fbbf24; }
+#nav a.router-link-exact-active, #nav a.router-link-active { color: #fbbf24; }
 .menu-toggle { display: none; margin-left: auto; background: none; border: 1px solid #fff; color: #fff; padding: 4px 8px; border-radius: 4px; }
 @media (max-width: 700px) {
   .nav-links { display: none; width: 100%; }
@@ -139,3 +139,6 @@ export default {
 .site-footer .brand .name { font-weight: 700; }
 .site-footer .copy { opacity: 0.85; }
 </style>
+
+
+.site-footer .links .router-link-active { text-decoration: underline; }

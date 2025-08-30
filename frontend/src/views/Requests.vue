@@ -20,7 +20,7 @@
       </div>
       <div class="field">
         <label for="problem_type">Problem</label>
-        <select id="problem_type" v-model="form.problem_type" required>
+        <select id="problem_type" v-model="form.problem_type" required :class="{ invalid: errors.problem_type }">
           <option disabled value="">Select a problem</option>
           <option>Engine</option>
           <option>Electrical</option>
@@ -34,7 +34,7 @@
       </div>
       <div class="field">
         <label for="phone_number">Owner Phone</label>
-        <input id="phone_number" v-model="form.phone_number" required />
+        <input id="phone_number" v-model="form.phone_number" @input="onPhoneInput" required placeholder="e.g. +256701234567" pattern="[+0-9\-\s()]{7,}" :class="{ invalid: errors.phone_number }" />
         <p v-if="errors.phone_number" class="error-inline">{{ errors.phone_number[0] }}</p>
       </div>
       <div class="field">
@@ -119,6 +119,10 @@ export default {
     await this.fetchRequests();
   },
   methods: {
+    onPhoneInput() {
+      const raw = this.form.phone_number || '';
+      this.form.phone_number = raw.replace(/[^+0-9\(\)\s-]/g, '');
+    },
     async fetchRequests() {
       try {
         const params = new URLSearchParams();
@@ -220,3 +224,10 @@ input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--bor
 .pager { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .pager .btn { padding: 6px 10px; }
 </style>
+
+
+.invalid { border-color: #dc2626 !important; }
+
+
+
+
