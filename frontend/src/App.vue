@@ -21,6 +21,19 @@
     </template>
   </div>
   <router-view/>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="brand">
+        <img class="logo" src="/logo.png" alt="FixMyRide logo" />
+        <span class="name">FixMyRide</span>
+      </div>
+      <nav class="links">
+        <a href="/">Home</a>
+        <a href="/requests">Requests</a>
+      </nav>
+      <div class="copy">© FixMyRide</div>
+    </div>
+  </footer>
   </template>
 
 <script>
@@ -114,5 +127,20 @@ export default {
 }
 
 .hello { font-weight: 600; }
+
+.site-footer { background: #1e3a8a; color: #fff; margin-top: 24px; }
+.site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }
+.site-footer .brand .name { font-weight: 700; }
+.site-footer .copy { opacity: 0.85; }\n\n.site-footer { background: #1e3a8a; color: #fff; margin-top: 24px; }\n.site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }\n.site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }\n.site-footer .brand .name { font-weight: 700; }\n.site-footer .copy { opacity: 0.85; }
 </style>
+
+
+
+.site-footer { background: #1e3a8a; color: #fff; margin-top: 24px; }
+.site-footer .footer-inner { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.site-footer .links a { color: #fff; margin: 0 8px; text-decoration: none; font-weight: 600; }
+.site-footer .brand .name { font-weight: 700; }
+.site-footer .copy { opacity: 0.85; }
+
 
